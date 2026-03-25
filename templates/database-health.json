@@ -1,0 +1,114 @@
+{
+  "name": "Schedule → DB Query → Alert on Threshold",
+  "description": "Runs a database query on schedule, alerts if results exceed threshold",
+  "version": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cron",
+              "expression": "0 */15 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule",
+      "name": "Every 15 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*) as count FROM orders WHERE status = 'pending' AND created_at < NOW() - INTERVAL '24 hours'",
+        "options": {}
+      },
+      "id": "postgres",
+      "name": "PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "threshold",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 100,
+              "operator": {
+                "type": "number",
+                "operation": "larger"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-threshold",
+      "name": "Check Threshold",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const count = $input.item.json.count;\nconst message = `🚨 *Stale Orders Alert*\n\n${count} pending orders older than 24 hours.\n\nAction required.`;\n\nreturn [{ json: { message, count } }];"
+      },
+      "id": "format-alert",
+      "name": "Format Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 250]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram-alert",
+      "name": "Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1250, 250]
+    }
+  ],
+  "connections": {
+    "Every 15 min": {
+      "main": [
+        [{ "node": "PostgreSQL", "type": "main", "index": 0 }]
+      ]
+    },
+    "PostgreSQL": {
+      "main": [
+        [{ "node": "Check Threshold", "type": "main", "index": 0 }]
+      ]
+    },
+    "Check Threshold": {
+      "main": [
+        [{ "node": "Format Alert", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format Alert": {
+      "main": [
+        [{ "node": "Telegram Alert", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "db-health-workflow"
+}

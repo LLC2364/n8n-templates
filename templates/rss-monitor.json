@@ -1,0 +1,78 @@
+{
+  "name": "RSS Monitor → Filter New → Telegram",
+  "description": "Monitors RSS feeds, sends new items to Telegram",
+  "version": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://example.com/feed.xml",
+        "options": {
+          "limit": 20
+        }
+      },
+      "id": "rss-read",
+      "name": "Read RSS",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "date-condition",
+              "leftValue": "={{ $json.pubDate }}",
+              "rightValue": "={{ $vars.lastRun || $now.toISO() }}",
+              "operator": {
+                "type": "dateTime",
+                "operation": "after"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-new",
+      "name": "Filter New Items",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "=📰 *{{ $json.title }}*\n\n{{ $json.description | truncate(300) }}\n\n🔗 {{ $json.link }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [750, 300]
+    }
+  ],
+  "connections": {
+    "Read RSS": {
+      "main": [
+        [{ "node": "Filter New Items", "type": "main", "index": 0 }]
+      ]
+    },
+    "Filter New Items": {
+      "main": [
+        [{ "node": "Telegram", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "rss-monitor-workflow"
+}

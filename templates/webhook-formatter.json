@@ -1,0 +1,57 @@
+{
+  "name": "Webhook → Data Transform → Discord Notification",
+  "description": "Receives webhook data, formats it, sends to Discord",
+  "version": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "notify",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "discord-notifier"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Format the incoming webhook data for Discord\nconst data = $input.item.json;\n\nconst embed = {\n  title: data.title || 'Notification',\n  description: data.message || JSON.stringify(data, null, 2),\n  color: data.color || 3447003,\n  timestamp: new Date().toISOString(),\n  fields: []\n};\n\nif (data.fields) {\n  for (const [key, value] of Object.entries(data.fields)) {\n    embed.fields.push({\n      name: key,\n      value: String(value),\n      inline: true\n    });\n  }\n}\n\nreturn [{ json: { embeds: [embed] } }];"
+      },
+      "id": "transform",
+      "name": "Format for Discord",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "webhook": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+        "options": {}
+      },
+      "id": "discord",
+      "name": "Discord",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 1,
+      "position": [750, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [{ "node": "Format for Discord", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format for Discord": {
+      "main": [
+        [{ "node": "Discord", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "webhook-discord-workflow"
+}
