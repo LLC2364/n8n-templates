@@ -1,0 +1,76 @@
+{
+  "name": "Email Forward to Telegram",
+  "description": "Forward important emails to a Telegram chat via a dedicated email address.",
+  "version": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "box": "INBOX",
+        "conditions": {
+          "options": {
+            "caseSensitive": true
+          },
+          "conditions": [
+            {
+              "id": "unread",
+              "leftValue": "={{ $json.json[\"Seen\"] }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {
+          "pollInterval": 5
+        }
+      },
+      "id": "email-trigger",
+      "name": "Email Trigger",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const email = $input.item.json;\n\nconst from = email.from || 'Unknown';\nconst subject = email.subject || '(No subject)';\nconst body = email.text || email.html || 'No body';\nconst cleanBody = body.replace(/<[^>]+>/g, '').substring(0, 500);\n\nconst message = `📧 *New Email*\\n\\n` +\n  `*From:* ${from}\\n` +\n  `*Subject:* ${subject}\\n\\n` +\n  `_${cleanBody}_`;\n\nreturn [{ json: { message, from, subject } }];"
+      },
+      "id": "format",
+      "name": "Format Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [750, 300]
+    }
+  ],
+  "connections": {
+    "Email Trigger": {
+      "main": [
+        [{ "node": "Format Email", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format Email": {
+      "main": [
+        [{ "node": "Telegram", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "email-telegram-forward"
+}

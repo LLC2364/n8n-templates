@@ -1,50 +1,68 @@
-# n8n Templates for OpenClaw
+# n8n Templates
 
-Collection of n8n workflow templates + OpenClaw skill for managing your n8n instance via natural language.
+5 Production-Ready n8n Automation Templates — Save 20+ hours/week.
 
-## Files
+## Templates
 
-- **`SKILL.md`** — OpenClaw skill: workflow management, executions, credentials, triggers
-- **`templates/`** — Import into n8n directly
-  - `schedule-trigger.json` — Cron → HTTP → Log
-  - `webhook-formatter.json` — Webhook → Transform → Discord
-  - `rss-monitor.json` — RSS → Filter new → Telegram
-  - `database-health.json` — Schedule → DB query → Alert
+### 1. GitHub Issue → Telegram Sync (`github-telegram-sync.json`)
+Automatically send Telegram notifications when new GitHub issues are created or updated.
 
-## Setup
+**Trigger:** GitHub Webhook  
+**Nodes:** Webhook → Code (parse issue) → Telegram Bot Message  
+**Use case:** Get real-time alerts for new issues in your repositories.
 
-Configure your n8n instance:
+---
 
-```bash
-export N8N_URL="https://n8n.example.com"
-export N8N_TOKEN="your-api-key"
-```
+### 2. RSS Feed → Telegram Digest (`rss-telegram-notifier.json`)
+Monitor RSS feeds and send new articles to Telegram as a digest.
 
-Or in `~/.openclaw/openclaw.json`:
+**Trigger:** Schedule (Cron)  
+**Nodes:** RSS Feed Read → Filter (new items) → Format Digest → Telegram Bot Message  
+**Use case:** Monitor blogs, news sources, or YouTube channel feeds.
 
-```json
-{
-  "skills": {
-    "entries": {
-      "n8n": {
-        "url": "https://n8n.example.com",
-        "apiKey": "your-api-key"
-      }
-    }
-  }
-}
-```
+---
 
-## Usage
+### 3. Webhook → Telegram Alert (`webhook-telegram-alert.json`)
+Generic webhook receiver that forwards HTTP POST/GET data to Telegram.
 
-Import templates: n8n → Workflows → Import from JSON → pick a file from `templates/`
+**Trigger:** Webhook  
+**Nodes:** Webhook → Telegram Bot Message  
+**Use case:** Alerts from monitoring tools, CI/CD pipelines, or custom scripts.
 
-Configure credentials in each template (Telegram chat ID, Discord webhook, DB connection).
+---
 
-## OpenClaw Commands
+### 4. Daily Summary → Telegram (`daily-summary-cron.json`)
+Send a daily summary message to Telegram on a schedule.
 
-After setting up N8N_URL/N8N_TOKEN:
-- "List all workflows"
-- "Trigger workflow #42 with {data}"
-- "Check failed executions"
-- "Disable the RSS monitor workflow"
+**Trigger:** Cron (daily at 9:00 AM)  
+**Nodes:** Schedule Trigger → Code (build summary) → Telegram Bot Message  
+**Use case:** Morning briefings, daily task reminders, daily stats reports.
+
+---
+
+### 5. Email Forward to Telegram (`email-telegram-forward.json`)
+Forward emails to a Telegram chat via a dedicated email address.
+
+**Trigger:** Email Trigger (IMAP)  
+**Nodes:** Email Trigger → Code (format) → Telegram Bot Message  
+**Use case:** Get important emails sent directly to Telegram.
+
+---
+
+## Installation
+
+1. Open n8n
+2. Import the JSON file (Workflows → Import from JSON)
+3. Configure your Telegram Bot token and chat ID
+4. Activate the workflow
+
+## Configuration
+
+Each template requires:
+- **Telegram Bot Token:** Create via @BotFather in Telegram
+- **Telegram Chat ID:** Your chat ID or group ID
+- **GitHub Webhook / RSS URL / IMAP credentials:** As needed per template
+
+## License
+
+MIT — Use freely, modify as needed.

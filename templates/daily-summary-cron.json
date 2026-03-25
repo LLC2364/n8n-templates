@@ -1,0 +1,60 @@
+{
+  "name": "Daily Summary → Telegram",
+  "description": "Send a daily summary message to Telegram on a schedule.",
+  "version": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "cron": {
+            "expression": "0 9 * * *"
+          }
+        }
+      },
+      "id": "schedule",
+      "name": "Daily at 9am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build a daily summary message\nconst now = new Date();\nconst dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });\n\nconst message = `🌅 *Daily Briefing*\\n\\n_${dateStr}_\\n\\n` +\n  `• Everything looks good!\\n` +\n  `• No alerts requiring attention.\\n` +\n  `• Have a great day! 🍵`;\n\nreturn [{ json: { message, date: now.toISOString() } }];"
+      },
+      "id": "build",
+      "name": "Build Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [750, 300]
+    }
+  ],
+  "connections": {
+    "Daily at 9am": {
+      "main": [
+        [{ "node": "Build Summary", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Summary": {
+      "main": [
+        [{ "node": "Telegram", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "daily-summary-cron"
+}

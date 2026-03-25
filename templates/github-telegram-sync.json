@@ -1,0 +1,60 @@
+{
+  "name": "GitHub Issue → Telegram Sync",
+  "description": "Automatically send Telegram notifications when new GitHub issues are created or updated.",
+  "version": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-webhook",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "GitHub Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "github-issue-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.item.json;\n\n// Handle GitHub webhook payload\nconst event = $input.item.headers['x-github-event'];\n\nlet message = '';\nlet color = 3447003;\n\nif (event === 'issues') {\n  const issue = body.issue;\n  const action = body.action;\n  \n  if (action === 'opened') {\n    message = `🆕 *New Issue Opened*\\n\\n*#${issue.number}:* ${issue.title}\\n\\n${issue.body?.substring(0, 200) || 'No description'}\\n\\n👤 ${issue.user.login}\\n🔗 ${issue.html_url}`;\n    color = 5763719;\n  } else if (action === 'closed') {\n    message = `✅ *Issue Closed*\\n\\n*#${issue.number}:* ${issue.title}\\n\\n👤 ${issue.user.login}\\n🔗 ${issue.html_url}`;\n    color = 2961146;\n  } else if (action === 'assigned') {\n    message = `👤 *Issue Assigned*\\n\\n*#${issue.number}:* ${issue.title}\\n\\nAssigned to: @${body.assignee?.login}\\n🔗 ${issue.html_url}`;\n  }\n} else if (event === 'pull_request') {\n  const pr = body.pull_request;\n  const action = body.action;\n  \n  if (action === 'opened') {\n    message = `📝 *PR Opened*\\n\\n*#${pr.number}:* ${pr.title}\\n\\n👤 ${pr.user.login}\\n🔗 ${pr.html_url}`;\n    color = 1247808;\n  } else if (action === 'merged') {\n    message = `🎉 *PR Merged*\\n\\n*#${pr.number}:* ${pr.title}\\n\\n👤 ${pr.user.login}\\n🔗 ${pr.html_url}`;\n    color = 8383491;\n  }\n}\n\nif (!message) {\n  message = `📬 *GitHub Event:* ${event}\\n\\n${JSON.stringify(body, null, 2).substring(0, 500)}`;\n}\n\nreturn [{ json: { message, color } }];"
+      },
+      "id": "parse",
+      "name": "Parse Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [750, 300]
+    }
+  ],
+  "connections": {
+    "GitHub Webhook": {
+      "main": [
+        [{ "node": "Parse Event", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Event": {
+      "main": [
+        [{ "node": "Telegram", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "github-telegram-sync"
+}

@@ -1,0 +1,60 @@
+{
+  "name": "Webhook → Telegram Alert",
+  "description": "Generic webhook receiver that forwards HTTP POST/GET data to Telegram.",
+  "version": 1,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "alert",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "generic-alert-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.item.json;\nconst headers = $input.item.headers || {};\n\nconst alertTitle = body.title || body.alert || body.message || 'Alert';\nconst severity = body.severity || body.level || 'info';\n\nlet emoji = '🔔';\nlet color = 3447003;\n\nif (severity === 'critical' || severity === 'error' || severity === 'high') {\n  emoji = '🚨';\n  color = 15158332;\n} else if (severity === 'warning' || severity === 'warn') {\n  emoji = '⚠️';\n  color = 15105570;\n} else if (severity === 'success' || severity === 'low') {\n  emoji = '✅';\n  color = 3066993;\n}\n\nlet message = `${emoji} *${alertTitle}*\\n\\n`;\n\nfor (const [key, value] of Object.entries(body)) {\n  if (['title', 'alert', 'message', 'severity', 'level'].includes(key)) continue;\n  if (typeof value === 'object') continue;\n  message += `*${key}:* \\`${value}\\`\\n`;\n}\n\nreturn [{ json: { message, color } }];"
+      },
+      "id": "format",
+      "name": "Format Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_CHAT_ID",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "telegram",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [750, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [{ "node": "Format Alert", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format Alert": {
+      "main": [
+        [{ "node": "Telegram", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "webhook-telegram-alert"
+}
